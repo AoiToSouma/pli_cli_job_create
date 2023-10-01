@@ -63,15 +63,18 @@ while true; do
     echo -e "${GREEN}plugin login"
     plugin admin login -f ~/pluginV2/apicredentials.txt
     echo -e "${NC}"
-    plugin jobs create "${created_toml}"
-    rc=$?
+    result=$(plugin jobs create "${created_toml}")
+    job_id="$(echo "${result}" | sed -n '6,6p' | sed 's/ ║ /,/g;s/╬//g;s/═//g;s/║//g;s/╔//g;s/[[:space:]]//g' | cut -f 1 -d "," )"
+
     echo -e "${NC}"
-    if [ $rc != 0 ]; then
+    echo "$result"
+    if [ "$job_id" == "" ]; then
         echo  -e "${RED}[ERROR] Plugin JOBS creation encoutered issues${NC}"
+        echo
         rm -f created-toml/${job_name}.toml
         exit
     else
-        ext_job_id_raw="$(sudo -u postgres -i psql -d plugin_mainnet_db -t -c "SELECT external_job_id FROM jobs WHERE name = '$job_name';")"
+        ext_job_id_raw="$(sudo -u postgres -i psql -d plugin_mainnet_db -t -c "SELECT external_job_id FROM jobs WHERE id = '$job_id';")"
         ext_job_id=$(echo $ext_job_id_raw | tr -d \-)
 
         num_job_name=$(( ${#job_name}+9 ))
@@ -89,6 +92,6 @@ while true; do
         echo -e
         echo -e "$oca_prefix$oca"
         echo -e "$jobname_prefix$ext_job_id ${NC}"
+        echo
     fi
-    echo
 done
