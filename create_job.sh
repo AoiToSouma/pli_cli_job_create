@@ -3,6 +3,8 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+sudo -l > /dev/null 2>&1
+
 curdir=$(echo `pwd`)
 workdir=$(cd $(dirname $0); pwd)
 if [ "${curdir}" != "${workdir}" ]; then
@@ -33,7 +35,10 @@ while true; do
     read -p "Input Base Currency : " base_currency
     read -p "Input Target Currency : " target_currency
     read -p "Input Job Name : " job_name
-    read -p "Inpute Oracle Contract Address : " oca
+    echo -e "${GREEN}Oracle Contract Address's 'xdc' prefix is automatically converted to '0x'.${NC}"
+    read -p "Input Oracle Contract Address : " oca
+
+    oca="$(echo ${oca} | sed '/^$/d;/^\\s*$/d;s/^xdc/0x/g')"
 
     url=$(echo ${urls[$choice]} | sed 's/[][^$*?+!/\\()&|'\''"]/\\&/g')
     path=${paths[$choice]}
@@ -57,6 +62,33 @@ while true; do
 
     echo -e "${GREEN}plugin login"
     plugin admin login -f ~/pluginV2/apicredentials.txt
-    plugin jobs create "${created_toml}"
     echo -e "${NC}"
+    plugin jobs create "${created_toml}"
+    rc=$?
+    echo -e "${NC}"
+    if [ $rc != 0 ]; then
+        echo  -e "${RED}[ERROR] Plugin JOBS creation encoutered issues${NC}"
+        rm -f created-toml/${job_name}.toml
+        exit
+    else
+        ext_job_id_raw="$(sudo -u postgres -i psql -d plugin_mainnet_db -t -c "SELECT external_job_id FROM jobs WHERE name = '$job_name';")"
+        ext_job_id=$(echo $ext_job_id_raw | tr -d \-)
+
+        num_job_name=$(( ${#job_name}+9 ))
+        if [ $num_job_name -ge 25 ]; then
+            oca_prefix="$(echo "$(printf "%-${num_job_name}s\n" "Oracle Contract Address is")" " :")"
+            jobname_prefix="$(echo "JOB $job_name ID is :")"
+        else
+            oca_prefix="$(echo "Oracle Contract Address is :")"
+            jobname_prefix="$(echo "$(printf "%-25s\n" "JOB $job_name ID is")" " :")"
+        fi
+        echo -e "${GREEN}"
+        echo
+        echo -e "       Local node job id - Copy to your Solidity script"
+        echo -e "================================================================="
+        echo -e
+        echo -e "$oca_prefix$oca"
+        echo -e "$jobname_prefix$ext_job_id ${NC}"
+    fi
+    echo
 done

@@ -28,9 +28,10 @@ Input procedure
 1. Select API
 2. Enter Base Currency and Target Currency according to the sample (e.g.)
 3. Enter JOB name
-4. Enter Oracle Contract Address
+4. Enter Oracle Contract Address * 'xdc' prefix is automatically converted to '0x'
 
 The toml file of the created JOB is created in the "created-toml" directory.
 
 ## Reference
-https://qiita.com/aoitosouma/private/06ce5d7f985673d8e5ac
+https://qiita.com/aoitosouma/private/06ce5d7f985673d8e5ac#job%E4%BD%9C%E6%88%90
+
